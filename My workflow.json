@@ -1,0 +1,213 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 7
+            },
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "5a608b1c-5664-4071-9bed-4cbcb2a7e65d",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://services.nvd.nist.gov/rest/json/cves/2.0?resultsPerPage=10&pubStartDate=2024-01-01T00:00:00.000&pubEndDate=2024-01-31T00:00:00.000",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        224,
+        -48
+      ],
+      "id": "bc0975f3-6fd3-47b5-b880-9b00c31d1ba3",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "url": "https://feeds.feedburner.com/TheHackersNews",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        224,
+        64
+      ],
+      "id": "34a3f3d7-a92e-4723-8035-a0b1bf0332d5",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        624,
+        0
+      ],
+      "id": "a7f1aacb-4abe-41ba-8d27-3859d602e1f2",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "You are a cybersecurity threat intelligence analyst. \nYou will receive CVE data from NVD and security news headlines.\n\nYour job:\n1. Summarize the top 5 most critical CVEs including: CVE ID, \n   severity, affected products, and brief description\n2. Summarize the top 3 most relevant security news items\n3. For each CVE, suggest a MITRE ATT&CK technique it maps to \n   if applicable\n4. Format everything clearly with headers for easy reading\n\nKeep the total output under 500 words. Be concise and \nprioritize actionable intelligence.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        832,
+        0
+      ],
+      "id": "9ce701d5-1877-4950-9ee1-425057d1da9a",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        704,
+        208
+      ],
+      "id": "4eda027c-85a6-4a96-a6f3-64cd84a2a13b",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "tIW2RSsptZnpDiiz",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "ryanjoseph999@gmail.com",
+        "subject": "= 🔐 Daily Threat Intel Digest — {{ $now.format('yyyy-MM-dd') }}",
+        "emailType": "text",
+        "message": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1184,
+        0
+      ],
+      "id": "c8591cce-2068-4190-b10c-ae9d506d073c",
+      "name": "Send a message",
+      "webhookId": "f16498f2-7a54-4bba-b837-b18091436dfd",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ZxGFMgjYf971URJl",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "5b84481e-d353-4d81-b0d1-7c918902f54e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fad846c03d0c419364cf8437c8c19746d84a1bfd8b0260c16bc2eaec98213521"
+  },
+  "id": "Rm27DcXDZjNqRZaW",
+  "tags": []
+}
